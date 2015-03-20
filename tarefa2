@@ -1,0 +1,50 @@
+#define LED_PIN 13
+#define BUT_PIN1 2
+#define BUT_PIN2 4
+
+int time = 0;
+int high = 0;
+int freq = 1000;
+int delay_1 = -2000;
+int delay_2 = -1000;
+
+void setup() {
+  pinMode(LED_PIN, OUTPUT);
+  pinMode(BUT_PIN1, INPUT);
+  pinMode(BUT_PIN2, INPUT); 
+}
+
+void loop () {
+  
+  if((millis() - time) >= freq) {
+    if(high == 0) {
+      digitalWrite(LED_PIN, HIGH);
+      high = 1;
+    }
+    
+    else {
+      digitalWrite(LED_PIN, LOW);
+      high = 0;  
+    }
+    
+    time = millis();
+  }
+  
+  int but1 = digitalRead(BUT_PIN1);
+  if (but1) {
+    freq += 100;
+    delay_1 = millis();
+    while(digitalRead(BUT_PIN1));
+  }
+  
+  int but2 = digitalRead(BUT_PIN2);
+  if (but2) {
+    freq -= 100;
+    delay_2 = millis();
+    while(digitalRead(BUT_PIN2));
+  }
+  
+  if(abs(delay_1 - delay_2) <= 500)
+    while(1);
+  
+}
