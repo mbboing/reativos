@@ -15,6 +15,9 @@ void setup() {
 }
 
 void loop () {
+
+  int but1 = digitalRead(BUT_PIN1);
+  int but2 = digitalRead(BUT_PIN2);
   
   if((millis() - time) >= freq) {
     if(high == 0) {
@@ -30,14 +33,12 @@ void loop () {
     time = millis();
   }
   
-  int but1 = digitalRead(BUT_PIN1);
   if (but1) {
     freq += 100;
     delay_1 = millis();
     while(digitalRead(BUT_PIN1));
   }
   
-  int but2 = digitalRead(BUT_PIN2);
   if (but2) {
     freq -= 100;
     delay_2 = millis();
