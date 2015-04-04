@@ -1,0 +1,3 @@
+O projeto consiste de um jogo estilo Arkanoid.
+Mova a barra usando as setas direcionais do teclado para impedir que a bola caia. 
+O jogo tem como objetivo destruir todos os blocos da tela.
