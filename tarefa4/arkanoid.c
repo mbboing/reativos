@@ -118,11 +118,11 @@ int main (int argc, char* args[])
 			switch (e.key.keysym.sym){
 				case SDLK_LEFT:
 					if(bar.x > 0) /* Para nao sair da tela */
-						bar.x -= 2;
+						bar.x -= 2 + 0.1*(blocksDestroyed);
 					break;
 				case SDLK_RIGHT:
 					if(bar.x < 540) /* Para nao sair da tela */
-						bar.x += 2;
+						bar.x += 2 + 0.1*(blocksDestroyed);
 					break;
 			}
 		}
