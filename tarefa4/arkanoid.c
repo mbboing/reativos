@@ -106,22 +106,21 @@ int main (int argc, char* args[])
 
 		t = (int) SDL_GetTicks();
 
+		/* Terminar o jogo caso o usuario feche a janela */
+
+		if (e.type == SDL_QUIT) {
+		    	break;
+		}
 
 		/* A cada periodo de tempo a bola e a barra se movem e busca as colisoes, este periodo diminui com o passar do jogo */
 
 		if(t - ultimot >= 50 - 2.5*(blocksDestroyed)){
 
 			ultimot = t;
-
-			/* Terminar o jogo caso o usuario feche a janela */
-
-			if (e.type == SDL_QUIT) {
-		    		break;
-			}
-
+			
 			/* Leitura do teclado para fazer o movimento da barra */
 
-			else if(e.type == SDL_KEYDOWN){
+			if(e.type == SDL_KEYDOWN){
 				switch (e.key.keysym.sym){
 					case SDLK_LEFT:
 						if(bar.x > 0) /* Para nao sair da tela */
