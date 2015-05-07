@@ -1,0 +1,124 @@
+#include "sdl.ceu"
+
+input void SDL_REDRAW;
+input void SDL_FRAME;
+input void SDL_QUIT;
+input _SDL_KeyboardEvent* SDL_KEYDOWN;
+
+var _SDL_Window* win;
+    finalize
+        win = _SDL_CreateWindow("Arkanoid",
+                            _SDL_WINDOWPOS_UNDEFINED, _SDL_WINDOWPOS_UNDEFINED,
+640, 480, _SDL_WINDOW_SHOWN
+);
+    with
+        _SDL_DestroyWindow(win);
+    end
+
+native do
+    SDL_Renderer* ren;
+end
+    finalize
+        _ren = _SDL_CreateRenderer(win, -1, 0);
+    with
+        _SDL_DestroyRenderer(_ren);
+    end
+
+class Ball with
+	var _SDL_Rect rec;
+	var int xspeed;
+	var int yspeed;
+	event void collided;
+do
+	par/or do
+		every 100 ms do
+			rec.x = rec.x + xspeed;
+			rec.y = rec.y + yspeed;
+		end
+	with
+		await this.collided;
+		yspeed = -yspeed;
+	with
+		every SDL_REDRAW do
+			_SDL_SetRenderDrawColor(_ren,0xFF,0xFF,0xFF,0x00);
+			_SDL_RenderFillRect(_ren,&rec);
+		end
+	end
+end
+
+class Bar with
+	var _SDL_Rect rec;
+do
+	par do
+		var _SDL_KeyboardEvent* key;
+		every key in SDL_KEYDOWN do
+			if key:keysym.sym == _SDLK_LEFT then
+				if rec.x>0 then	rec.x = rec.x - 10; end
+			else/if key:keysym.sym == _SDLK_RIGHT then
+				if rec.x<540 then rec.x = rec.x + 10; end
+			end
+		end
+	with
+		every SDL_REDRAW do
+			_SDL_SetRenderDrawColor(_ren, 0x00,0x00,0x40,0x00);
+			_SDL_RenderFillRect(_ren, null);
+			_SDL_SetRenderDrawColor(_ren,0xFF,0xFF,0xFF,0x00);
+			_SDL_RenderFillRect(_ren,&rec);
+		end
+	end
+end
+
+class Block with
+	var _SDL_Rect rec;
+	var int destroyed;
+	var int color;
+do
+	every SDL_REDRAW do
+		if destroyed then
+			_SDL_SetRenderDrawColor(_ren, 0x00,0x00,0x40,0x00);
+		else/if color then
+			_SDL_SetRenderDrawColor(_ren, 0xFF,0x66,0x00,0x00);
+		else
+			_SDL_SetRenderDrawColor(_ren, 0xFF,0x99,0x00,0x00);
+		end
+		_SDL_RenderFillRect(_ren,&rec);
+	end
+end
+
+var Bar bar;
+    bar.rec.w = 100;
+    bar.rec.h = 10;
+    bar.rec.x = 270;
+    bar.rec.y = 470;
+var Ball ball;
+    ball.rec.w = 10;
+    ball.rec.h = 10;
+    ball.rec.x = 240;
+    ball.rec.y = 420;
+	ball.xspeed = 10;
+	ball.yspeed = 10;
+var Block[15] blocks;
+	loop i in 15 do
+		blocks[i].rec.x = 70 + 100*(i%5);
+		blocks[i].rec.y = 80 + 40*(i/5);
+		blocks[i].rec.w = 100;
+		blocks[i].rec.h = 40;
+		blocks[i].destroyed = 0;
+		blocks[i].color = i%2;
+	end
+
+par/or do
+    await SDL_QUIT;
+with
+	every SDL_FRAME do
+		if ball.rec.y == (bar.rec.y - ball.rec.h) and ball.rec.x >= bar.rec.x and ball.rec.x <= (bar.rec.x + bar.rec.w) then
+			ball.yspeed = -ball.yspeed;
+		end
+	end
+with
+    every SDL_REDRAW do
+        _SDL_RenderPresent(_ren);
+    end
+end
+
+escape 0;
