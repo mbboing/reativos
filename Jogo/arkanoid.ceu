@@ -1,4 +1,6 @@
 #include "sdl.ceu"
+#define BALLTIME 60
+#define BARTIME 10
 
 input void SDL_REDRAW;
 input void SDL_DT;
@@ -31,7 +33,7 @@ class Ball with
 	event void collided;
 do
 	par/or do
-		every 50 ms do
+		every BALLTIME ms do
 			rec.x = rec.x + xspeed;
 			rec.y = rec.y + yspeed;
 		end
@@ -56,7 +58,7 @@ do
 	par do
 		var _SDL_KeyboardEvent* key;
 		loop do
-			await 25ms;
+			await BARTIME ms;
 			every key in SDL_KEYDOWN do
 				if key:keysym.sym == _SDLK_LEFT then
 					if rec.x>0 then
@@ -73,8 +75,6 @@ do
 		end
 	with
 		every SDL_REDRAW do
-			_SDL_SetRenderDrawColor(_ren, 0x00,0x00,0x40,0x00);
-			_SDL_RenderFillRect(_ren, null);
 			_SDL_SetRenderDrawColor(_ren,0xFF,0xFF,0xFF,0x00);
 			_SDL_RenderFillRect(_ren,&rec);
 		end
@@ -101,34 +101,41 @@ end
 
 _srand(_time(null));
 var int randnum = (_rand()%55)*10;
-
-var Bar bar;
-    bar.rec.w = 100;
-    bar.rec.h = 10;
-    bar.rec.x = randnum;
-    bar.rec.y = 470;
-var Ball ball;
-    ball.rec.w = 10;
-    ball.rec.h = 10;
-    ball.rec.x = randnum;
-    ball.rec.y = 420;
-	ball.xspeed = 10;
-	ball.yspeed = 10;
-pool Block[15] blocks;
-	loop i in 15 do
-		spawn Block in blocks with
-			this.rec.x = 70 + 100*(i%5);
-			this.rec.y = 80 + 40*(i/5);
-			this.rec.w = 100;
-			this.rec.h = 40;
-			this.destroyed = 0;
-			this.color = i%2;
-		end;
-	end
+var int blocksDestroyed = 0;
 
 par/or do
-    await SDL_QUIT;
+	every SDL_REDRAW do
+		_SDL_SetRenderDrawColor(_ren, 0x00,0x00,0x40,0x00);
+		_SDL_RenderFillRect(_ren, null);
+	end
 with
+	await SDL_QUIT;
+with
+
+	var Bar bar;
+	    bar.rec.w = 100;
+	    bar.rec.h = 10;
+	    bar.rec.x = randnum;
+	    bar.rec.y = 470;
+	var Ball ball;
+	    ball.rec.w = 10;
+	    ball.rec.h = 10;
+	    ball.rec.x = randnum;
+	    ball.rec.y = 420;
+		ball.xspeed = 10;
+		ball.yspeed = 10;
+	pool Block[15] blocks;
+		loop i in 15 do
+			spawn Block in blocks with
+				this.rec.x = 70 + 100*(i%5);
+				this.rec.y = 80 + 40*(i/5);
+				this.rec.w = 100;
+				this.rec.h = 40;
+				this.destroyed = 0;
+				this.color = i%2;
+			end;
+		end
+
 	every SDL_DT do
 		/* Teste de colisao com as paredes */
 		if ball.rec.x <= 0 or ball.rec.x >= 630 then
@@ -149,6 +156,9 @@ with
 		if ball.rec.y == 470 then
 			ball.xspeed = 0;
 			ball.yspeed = 0;
+			/* Mensagem de fim de jogo */
+			_SDL_ShowSimpleMessageBox(_SDL_MESSAGEBOX_INFORMATION,"Game Over","PERDESTE!",null);
+			escape 0;
 		end
 
 		/* Teste de colisao com cada um dos blocos */
@@ -159,6 +169,7 @@ with
 				and ball.rec.y + ball.rec.h <= b1:rec.y + b1:rec.h then
 					ball.xspeed = -ball.xspeed;
 					b1:destroyed = 1;
+					blocksDestroyed = blocksDestroyed + 1;
 
 			/* Com a parte direita do bloco */			
 			else/if ball.rec.x == b1:rec.x + b1:rec.w
@@ -166,6 +177,7 @@ with
 				and ball.rec.y + ball.rec.h <= b1:rec.y + b1:rec.h then
 					ball.xspeed = -ball.xspeed;
 					b1:destroyed = 1;
+					blocksDestroyed = blocksDestroyed + 1;
 
 			/* Com a parte superior do bloco */
 			else/if ball.rec.y + ball.rec.h == b1:rec.y
@@ -177,6 +189,7 @@ with
 				or ball.rec.x == (b1:rec.x + 90) and ball.rec.y == b1:rec.y then
 					ball.yspeed = -ball.yspeed;
 					b1:destroyed = 1;
+					blocksDestroyed = blocksDestroyed + 1;
 
 			/* Com a parte inferior do bloco */			
 			else/if ball.rec.y == b1:rec.y + b1:rec.h
@@ -188,9 +201,16 @@ with
 				or ball.rec.x == (b1:rec.x + 90) and ball.rec.y == (b1:rec.y + 30) then
 					ball.yspeed = -ball.yspeed;
 					b1:destroyed = 1;
+					blocksDestroyed = blocksDestroyed + 1;
 			end
 		end
 
+		/* Testa se todos os blocos foram destruidos para poder terminar o jogo */
+		if blocksDestroyed == 15 then
+			/* Mensagem de fim de jogo */
+			_SDL_ShowSimpleMessageBox(_SDL_MESSAGEBOX_INFORMATION,"Game Over","GANHASTE!",null);
+			escape 0;
+		end
 	end
 with
     every SDL_REDRAW do
