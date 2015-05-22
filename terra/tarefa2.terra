@@ -7,31 +7,43 @@ pktype usrMsg from radioMsg with
 	var ulong[2] d32;
 end
 var usrMsg msgRadio;
-var usrMsg msgRadioEcho;
+var usrMsg msgRadio1;
+var usrMsg msgRadio2;
+var ubyte stat;
 
 par do
 	loop do
-		msgRadio.source = nodeId;
-		msgRadio.target = nodeId - 1;
+		msgRadio1.source = nodeId;
+		msgRadio1.target = nodeId - 1;
 		if nodeId == 11 then
-			msgRadio.target = 1;
+			msgRadio1.target = 1;
 		end
 		loop do
 			await 10s;
 			emit REQ_TEMP();
-			msgRadio.d16[0] = await TEMP;
-			emit SEND(msgRadio);
-			await SEND_DONE;
+			msgRadio1.d16[0] = await TEMP;
+			stat = qPut(msgRadio1);
 		end
 	end
 with
 	loop do
-		msgRadioEcho = await RECEIVE;
-		msgRadioEcho.target = nodeId - 1;
+		msgRadio2 = await RECEIVE;
+		msgRadio2.target = nodeId - 1;
 		if nodeId == 11 then
-			msgRadioEcho.target = 1;
+			msgRadio2.target = 1;
 		end
-		emit SEND(msgRadioEcho);
-		await SEND_DONE;
+		stat = qPut(msgRadio2);
+	end
+with
+	loop do
+		await Q_READY;
+		loop do
+			stat = qGet(msgRadio);
+			emit SEND(msgRadio);
+			await SEND_DONE;
+			if qSize() == 0 then
+				break;
+			end
+		end
 	end
 end
