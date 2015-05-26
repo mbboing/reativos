@@ -1,0 +1,65 @@
+#include "/home/terra/TerraNet_v0.1/terra/TerraNet.defs"
+
+var ushort nodeId = getNodeId();
+pktype usrMsg from radioMsg with
+	var ubyte[4] d8;
+	var ushort[4] d16;
+	var ulong[2] d32;
+end
+
+/*
+d16[0]: Temperatura 
+d16[1]: Contador
+*/
+
+var usrMsg msgRadio;
+var usrMsg msgRadio1;
+var usrMsg msgRadio2;
+var ubyte stat = 0;
+var ushort contador = 1;
+var ushort[100] nos;
+
+/* Zerando o vetor de nos */
+loop do
+	if stat == 100 then
+		break;
+	end
+	nos[stat] = 0;
+	inc stat;
+	await 10 ms;
+end
+
+par do
+	loop do
+		msgRadio1.source = nodeId;
+		msgRadio1.target = BROADCAST;
+		loop do
+			await (1000*nodeId) ms;
+			emit REQ_TEMP();
+			msgRadio1.d16[0] = await TEMP;
+			msgRadio1.d16[1] = contador;
+			stat = qPut(msgRadio1);
+			inc contador;
+		end
+	end
+with
+	loop do
+		msgRadio2 = await RECEIVE;
+		if nos[msgRadio2.source] < msgRadio1.d16[1] then
+			stat = qPut(msgRadio2);
+			inc nos[msgRadio2.source];
+		end
+	end
+with
+	loop do
+		await Q_READY;
+		loop do
+			stat = qGet(msgRadio);
+			emit SEND(msgRadio);
+			await SEND_DONE;
+			if qSize() == 0 then
+				break;
+			end
+		end
+	end
+end
