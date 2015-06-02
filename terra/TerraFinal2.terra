@@ -1,0 +1,73 @@
+#include "/home/terra/TerraNet_v0.1/terra/TerraNet.defs"
+
+var ushort nodeId = getNodeId();
+pktype usrMsg from radioMsg with
+	var ubyte[4] d8;
+	var ushort[4] d16;
+	var ulong[2] d32;
+end
+
+/*
+d16[0]: Temperatura 
+d16[1]: Contador de reenvio
+d16[2]: Contador de temperatura
+*/
+
+var usrMsg msgRadio;
+var usrMsg msgRadio1;
+var usrMsg msgRadio2;
+var ubyte i = 0;
+var ushort contador = 0;
+var ushort conttemperatura = 0;
+
+/* Zerando o vetor de vizinhos */
+/*
+loop do
+	if i == 8 then
+		break;
+	end
+	vizinhos[i] = 0;
+	inc i;
+	await 10 ms;
+end
+*/
+
+par do
+	/* Envio da temperatura para a pilha */
+	await (nodeId - 10) s;
+	loop do
+		msgRadio1.source = nodeId;
+		msgRadio1.target = BROADCAST;
+		emit REQ_TEMP();
+		inc contador;
+		inc conttemperatura;
+		msgRadio1.d16[0] = await TEMP;
+		msgRadio1.d16[1] = contador;
+		msgRadio1.d16[2] = conttemperatura;
+		i = qPut(msgRadio1);
+		await 100 s;
+	end
+with
+	/* Reenvio de mensagens para a pilha */
+	loop do
+		msgRadio2 = await RECEIVE;
+		if msgRadio2.d16[1] > contador then
+			inc contador;
+			msgRadio2.d16[1] = contador;
+			i = qPut(msgRadio2);
+		end
+	end
+with
+	/* Envio da pilha para o radio */
+	loop do
+		await Q_READY;
+		loop do
+			i = qGet(msgRadio);
+			emit SEND(msgRadio);
+			await SEND_DONE;
+			if qSize() == 0 then
+				break;
+			end
+		end
+	end
+end
