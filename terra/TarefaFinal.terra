@@ -1,0 +1,105 @@
+#include "/home/terra/TerraNet_v0.1/terra/TerraNet.defs"
+
+var ushort nodeId = getNodeId();
+/*noPai eh o id do no pai*/
+var ushort noPai = 0;
+pktype usrMsg from radioMsg with
+	var ubyte[4] d8;
+	var ushort[4] d16;
+	var ulong[2] d32;
+end
+
+/*
+d16[0]: Temperatura 
+d16[1]: Contador
+d8[0] : 1 se for mensagem inicial, zero caso contrario
+*/
+
+var usrMsg msgInicial;
+var usrMsg msgQueue;
+var usrMsg msgTemp;
+var usrMsg msgReenv;
+/*
+msgInicial: Mensagem para cada nó obter um pai e, assim, montar a arvore
+msgQueue: Mensagem a ser retirada da pilha e enviada ao radio
+msgTemp: Mensagem que se obtem a partir da leitura da temperatura
+msgReenv: Mensagem lida pelo nó que deve ser reenviada para o pai
+*/
+
+var ubyte stat;
+var ushort contador = 0;
+/*contador diz qual é a leitura da temperatura*/
+
+var ushort janelaDeTempo = 100*(nodeId - 10);
+var ushort periodo = 10000;
+/*O nó le e envia a temperatura quando chegar a sua janela de tempo dentro do periodo, em ms*/
+
+par/and do
+
+/*Envio da mensagem inicial para a montagem da arvore*/
+
+	if nodeId == 11 then
+		emit LED0(ON);
+		/*LED0 ligado indica que o no possui um pai*/
+		noPai = 1;
+		msgInicial.source = nodeId;
+		msgInicial.target = BROADCAST;
+		msgInicial.d8[0] = 1;
+		stat = qPut(msgInicial);
+	end
+with
+
+/*Leitura da temperatura, montando uma mensagem e enviando para a pilha*/
+
+	loop do
+		await 1 s;
+		msgTemp.source = nodeId;
+		loop do
+			await (janelaDeTempo) ms;
+			emit REQ_TEMP();
+			msgTemp.target = noPai;
+			msgTemp.d16[0] = await TEMP;
+			msgTemp.d16[1] = contador;
+			msgTemp.d8[0] = 0;
+			stat = qPut(msgTemp);
+			inc contador;
+			await (periodo - janelaDeTempo) ms;
+		end
+	end
+with
+
+/*Recebendo uma mensagem do filho e reenviando para a pilha*/
+
+	loop do
+		msgReenv = await RECEIVE;
+		/*Caso a mensagem for a inicial de montagem da arvore*/
+		if msgReenv.d8[0] == 1 then
+			if noPai == 0 then
+				emit LED0(ON);
+				/*LED0 ligado indica que o no possui um pai*/
+				noPai = msgReenv.source;
+				msgReenv.source = nodeId;
+				stat = qPut(msgReenv);
+			end
+		/*Caso for uma outra mensagem de dados*/
+		else
+			msgReenv.target = noPai;
+			stat = qPut(msgReenv);
+		end
+	end
+with
+
+/*Retirando as mensagens da pilha e enviando para o pai via radio*/
+
+	loop do
+		await Q_READY;
+		loop do
+			stat = qGet(msgQueue);
+			emit SEND(msgQueue);
+			await SEND_DONE;
+			if qSize() == 0 then
+				break;
+			end
+		end
+	end
+end
