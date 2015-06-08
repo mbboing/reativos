@@ -30,8 +30,8 @@ var ubyte stat;
 var ushort contador = 0;
 /*contador diz qual é a leitura da temperatura*/
 
-var ushort janelaDeTempo = 100*(nodeId - 10);
-var ushort periodo = 10000;
+var ushort janelaDeTempo = 600*(nodeId - 10);
+var ushort periodo = 60000;
 /*O nó le e envia a temperatura quando chegar a sua janela de tempo dentro do periodo, em ms*/
 
 par/and do
