@@ -1,3 +1,9 @@
+/*
+Alunos:
+Bernard Jean Lupiac	1311792
+Miguel Baldez Boing	1312013
+*/
+
 #include "/home/terra/TerraNet_v0.1/terra/TerraNet.defs"
 
 var ushort nodeId = getNodeId();
