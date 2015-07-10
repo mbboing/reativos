@@ -1,5 +1,11 @@
+O programa deve ser executado na maquina virtual de terra.
+
 Antes de tudo, instale o SDL2 na maquina de terra.
 Para isto, basta rodar o script shell instalacaoSDL.sh
+
+Compile sensorData.terra abrindo o arquivo e pressionando F5.
+Compile o visualizadorGrafico.c com o comando:
+gcc -o visualizadorGrafico visualizadorGrafico.c `sdl2-config --cflags --libs`
 
 Como configurar o programa:
 
